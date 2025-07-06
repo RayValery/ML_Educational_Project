@@ -10,7 +10,7 @@ from sklearn.metrics import accuracy_score, confusion_matrix, classification_rep
     roc_auc_score
 
 # 2. Завантаження даних
-df = pd.read_csv("src/TitanicProblem/data/train.csv")
+df_test = pd.read_csv("src/TitanicProblem/data/train.csv")
 
 
 # 3. Перевірка даних
@@ -40,14 +40,14 @@ df = pd.read_csv("src/TitanicProblem/data/train.csv")
 # Embarked — кілька пропусків
 
 # - заповнення пропусків
-df.fillna({"Age": df["Age"].median()}, inplace=True)      # заповнюю медіаною, бо розподіл віку трохи зміщений (не симетричний)
+df_test.fillna({"Age": df_test["Age"].median()}, inplace=True)      # заповнюю медіаною, бо розподіл віку трохи зміщений (не симетричний)
 
 # print(df["Embarked"].value_counts())
 # всього кілька пропусків — можна заповнити найпопулярнішим портом
 # найчастіше це 'S'
-df.fillna({"Embarked": "S"}, inplace=True)
+df_test.fillna({"Embarked": "S"}, inplace=True)
 
-df.drop("Cabin", axis=1, inplace=True)      # там майже все NaN, і Cabin дуже деталізований, тому його просто викидають
+df_test.drop("Cabin", axis=1, inplace=True)      # там майже все NaN, і Cabin дуже деталізований, тому його просто викидають
 
 # print(df.isnull().sum())
 
@@ -55,18 +55,18 @@ df.drop("Cabin", axis=1, inplace=True)      # там майже все NaN, і C
 # Sex → male / female
 # Embarked → S / C / Q
 # Pclass → це числове, але по суті категорія (1, 2, 3)
-df["Sex"] = df["Sex"].map({"male": 0, "female": 1})
-df = pd.get_dummies(df, columns=["Embarked"], drop_first=True)      # тут варто one-hot
+df_test["Sex"] = df_test["Sex"].map({"male": 0, "female": 1})
+df_test = pd.get_dummies(df_test, columns=["Embarked"], drop_first=True)      # тут варто one-hot
 # df = pd.get_dummies(df, columns=["Pclass"], drop_first=True)
 
 # print(df.head())
 
 
 # 6. Вибір features & target
-y = df["Survived"]
+y = df_test["Survived"]
 
 # ці ознаки прибираємо: PassengerId, Name, Ticket
-X = df[[
+X_submission = df_test[[
 "Pclass",
     "Sex",
     "Age",
@@ -80,7 +80,7 @@ X = df[[
 
 # 7. Розбиття на train/test
 X_train, X_test, y_train, y_test = train_test_split(
-    X, y, test_size=0.2, random_state=42
+    X_submission, y, test_size=0.2, random_state=42
 )
 
 
@@ -123,3 +123,44 @@ print(report)
 roc_auc = roc_auc_score(y_test, y_proba)
 print(f"ROC-AUC: {roc_auc:.2f}")
 
+
+
+#======================Submission============================
+
+df_test = pd.read_csv("src/TitanicProblem/data/test.csv")
+
+df_test.fillna({"Age": df_test["Age"].median()}, inplace=True)
+df_test.fillna({"Fare": df_test["Fare"].median()}, inplace=True)
+
+df_test.drop(["Cabin", "Ticket", "Name"], axis=1, inplace=True)
+df_test["Sex"] = df_test["Sex"].map({"male": 0, "female": 1})
+
+df_test.fillna({"Embarked": "S"}, inplace=True)
+df_test = pd.get_dummies(df_test, columns=["Embarked"], drop_first=True)
+
+if "Embarked_Q" not in df_test.columns:
+    df_test["Embarked_Q"] = 0
+if "Embarked_S" not in df_test.columns:
+    df_test["Embarked_S"] = 0
+
+
+X_submission = df_test[[
+    "Pclass",
+    "Sex",
+    "Age",
+    "SibSp",
+    "Parch",
+    "Fare",
+    "Embarked_Q",
+    "Embarked_S"
+]]
+
+X_submission_scaled = scaler.transform(X_submission)
+
+submission_preds = model.predict(X_submission_scaled)
+
+submission = pd.DataFrame({
+    "PassengerId": df_test["PassengerId"],
+    "Survived": submission_preds
+})
+submission.to_csv("submission.csv", index=False)
