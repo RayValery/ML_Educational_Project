@@ -10,7 +10,7 @@ from sklearn.metrics import accuracy_score, confusion_matrix, classification_rep
     roc_auc_score
 
 # 2. Завантаження даних
-df_test = pd.read_csv("src/TitanicProblem/data/train.csv")
+df_train = pd.read_csv("src/TitanicProblem/data/train.csv")
 
 
 # 3. Перевірка даних
@@ -40,14 +40,14 @@ df_test = pd.read_csv("src/TitanicProblem/data/train.csv")
 # Embarked — кілька пропусків
 
 # - заповнення пропусків
-df_test.fillna({"Age": df_test["Age"].median()}, inplace=True)      # заповнюю медіаною, бо розподіл віку трохи зміщений (не симетричний)
+df_train.fillna({"Age": df_train["Age"].median()}, inplace=True)      # заповнюю медіаною, бо розподіл віку трохи зміщений (не симетричний)
 
 # print(df["Embarked"].value_counts())
 # всього кілька пропусків — можна заповнити найпопулярнішим портом
 # найчастіше це 'S'
-df_test.fillna({"Embarked": "S"}, inplace=True)
+df_train.fillna({"Embarked": "S"}, inplace=True)
 
-df_test.drop("Cabin", axis=1, inplace=True)      # там майже все NaN, і Cabin дуже деталізований, тому його просто викидають
+df_train.drop("Cabin", axis=1, inplace=True)      # там майже все NaN, і Cabin дуже деталізований, тому його просто викидають
 
 # print(df.isnull().sum())
 
@@ -55,19 +55,19 @@ df_test.drop("Cabin", axis=1, inplace=True)      # там майже все NaN,
 # Sex → male / female
 # Embarked → S / C / Q
 # Pclass → це числове, але по суті категорія (1, 2, 3)
-df_test["Sex"] = df_test["Sex"].map({"male": 0, "female": 1})
-df_test = pd.get_dummies(df_test, columns=["Embarked"], drop_first=True)      # тут варто one-hot
+df_train["Sex"] = df_train["Sex"].map({"male": 0, "female": 1})
+df_train = pd.get_dummies(df_train, columns=["Embarked"], drop_first=True)      # тут варто one-hot
 # df = pd.get_dummies(df, columns=["Pclass"], drop_first=True)
 
 # print(df.head())
 
 
 # 6. Вибір features & target
-y = df_test["Survived"]
+y = df_train["Survived"]
 
 # ці ознаки прибираємо: PassengerId, Name, Ticket
-X_submission = df_test[[
-"Pclass",
+X = df_train[[
+    "Pclass",
     "Sex",
     "Age",
     "SibSp",
@@ -80,7 +80,7 @@ X_submission = df_test[[
 
 # 7. Розбиття на train/test
 X_train, X_test, y_train, y_test = train_test_split(
-    X_submission, y, test_size=0.2, random_state=42
+    X, y, test_size=0.2, random_state=42
 )
 
 
