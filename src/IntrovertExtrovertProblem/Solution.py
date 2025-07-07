@@ -85,3 +85,34 @@ print(report)
 
 roc_auc = roc_auc_score(y_test, y_proba)
 print(f"ROC-AUC: {roc_auc:.2f}")
+
+
+
+#======================Submission============================
+
+df_test = pd.read_csv("src/IntrovertExtrovertProblem/data/test.csv")
+
+df_test["Stage_fear"] = df_test["Stage_fear"].map({"Yes": 1, "No": 0})
+df_test["Drained_after_socializing"] = df_test["Drained_after_socializing"].map({"Yes": 1, "No": 0})
+df_test.fillna(df_test.median(), inplace=True)
+
+X_submission = df_test[[
+    "Time_spent_Alone",
+    "Stage_fear",
+    "Social_event_attendance",
+    "Going_outside",
+    "Drained_after_socializing",
+    "Friends_circle_size",
+    "Post_frequency"
+]]
+
+X_submission_scaled = scaler.transform(X_submission)
+
+submission_preds = model.predict(X_submission_scaled)
+
+submission = pd.DataFrame({
+    "id": df_test["id"],
+    "Personality": submission_preds
+})
+submission["Personality"] = submission["Personality"].map({1: "Extrovert", 0: "Introvert"})
+submission.to_csv("src/IntrovertExtrovertProblem/submission.csv", index=False)
